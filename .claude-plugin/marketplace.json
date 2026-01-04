@@ -1,0 +1,35 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "hh-agentics",
+  "description": "HouseHudson agentic AI plugins: governance skills for AI code assistants and Foundry VTT development patterns",
+  "owner": {
+    "name": "ImproperSubset",
+    "email": "impropersubset@users.noreply.github.com"
+  },
+  "plugins": [
+    {
+      "name": "cc-governance",
+      "description": "Reusable governance skills and hooks for AI code assistants: delegation policies, development workflows, documentation management, git branching, plugin extensions, and automatic skill activation",
+      "version": "1.2.0",
+      "author": {
+        "name": "ImproperSubset",
+        "email": "impropersubset@users.noreply.github.com"
+      },
+      "source": "./cc-governance",
+      "category": "productivity",
+      "homepage": "https://github.com/ImproperSubset/hh-agentics"
+    },
+    {
+      "name": "fvtt-dev",
+      "description": "Essential skills for Foundry VTT module development: V13 migration, multi-client safety, version compatibility, data migrations, and error handling patterns",
+      "version": "1.1.0",
+      "author": {
+        "name": "ImproperSubset",
+        "email": "impropersubset@users.noreply.github.com"
+      },
+      "source": "./fvtt-dev",
+      "category": "development",
+      "homepage": "https://github.com/ImproperSubset/hh-agentics"
+    }
+  ]
+}

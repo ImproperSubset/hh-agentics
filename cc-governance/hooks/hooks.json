@@ -1,0 +1,29 @@
+{
+  "description": "Governance hooks for documentation tracking and skill activation",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/docs/tracking/ACTIVE.md\" ]; then echo 'Tip: Check docs/tracking/ACTIVE.md for current work status.'; fi",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Before proceeding with this request, evaluate which installed skills may be relevant. For each potentially relevant skill, briefly state why it applies or doesn't apply. If any skills apply, use the Skill tool to load them before implementing the solution. This ensures consistent application of documented patterns and best practices.",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
