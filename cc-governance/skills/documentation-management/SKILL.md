@@ -198,29 +198,55 @@ Nobody maintains them
 
 **Purpose:** Persistent tracking of active work and deferred ideas across sessions
 
+There are TWO tracking locations - project-specific and cross-project:
+
+#### Project-Specific Tracking (`docs/tracking/`)
+
+For work tied to a specific project:
+
 **Files:**
-- `docs/tracking/ACTIVE.md` ✅ - Current work in progress
-- `docs/tracking/BACKLOG.md` ✅ - Deferred ideas for later
+- `docs/tracking/ACTIVE.md` - Current work in progress for THIS project
+- `docs/tracking/BACKLOG.md` - Deferred ideas for THIS project
+
+**Use when:**
+- Bug fixes, features, refactoring for this codebase
+- Project-specific TODOs and technical debt
+- Items that only make sense in this project's context
+
+#### Cross-Project Tracking (`~/git/hh-meta/tracking/`)
+
+For ideas, notes, and backlog that span projects or aren't project-specific:
+
+**Files:**
+- `tracking/IDEAS.md` - Future features, exploration ideas, "what if" thoughts
+- `tracking/BACKLOG.md` - Deferred work with context for later pickup
+- `tracking/PROJECTS.md` - Active projects overview and status
+- `tracking/NOTES.md` - Learnings, decisions, patterns discovered
+
+**Use when:**
+- Idea applies to multiple projects
+- General learning or pattern worth remembering
+- Meta-level tracking (project statuses, cross-cutting concerns)
+- Not sure which project it belongs to
+
+#### Decision: Project vs Cross-Project
+
+```
+Is this tied to a specific project's codebase?
+  ↓ YES → Project tracking (docs/tracking/)
+  ↓ NO
+Is this a general idea, learning, or cross-cutting concern?
+  ↓ YES → Cross-project tracking (~/git/hh-meta/tracking/)
+  ↓ UNCLEAR → ASK THE USER where it should go
+```
+
+**IMPORTANT:** When unclear whether something is project-specific or cross-project, ASK the user: "Should I track this in the project's docs/tracking/ or in hh-meta for cross-project visibility?"
 
 **Characteristics:**
 - Persistent across sessions (unlike TodoWrite which is ephemeral)
 - Provides continuity when resuming work
 - Separates "what we're doing" from "what we might do"
-
-**ACTIVE.md:**
-- Read at session start for continuity
-- Track current work items with context, status, next steps
-- Update when starting/completing work
-- Keep focused on active items only
-
-**BACKLOG.md:**
-- **Access rules** (to preserve context):
-  - Write when user says "remember X for later" or "add to backlog"
-  - Read when user asks "what's in the backlog?" or "anything to work on?"
-  - Do NOT automatically load at session start
-- Store deferred ideas with context for future reference
-
-**Location:** `docs/tracking/`
+- Cross-project tracking is backed up to GitHub (private repo)
 
 **Lifecycle:** Permanent files, content updated as work progresses
 
@@ -259,8 +285,10 @@ Q4: Is this a decision we might re-litigate?
   ↓ NO
 Q5: Is this tracking active work or deferred ideas?
   ↓ YES
-  → Update docs/tracking/ACTIVE.md (current work)
-  → Update docs/tracking/BACKLOG.md (deferred ideas)
+  → Q5a: Is this project-specific?
+    ↓ YES → Update docs/tracking/ (ACTIVE.md or BACKLOG.md)
+    ↓ NO  → Update ~/git/hh-meta/tracking/ (IDEAS, BACKLOG, NOTES, or PROJECTS)
+    ↓ UNCLEAR → ASK USER where it should go
   → Persistent across sessions
 
   ↓ NO
