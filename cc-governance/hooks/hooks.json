@@ -24,6 +24,18 @@
           }
         ]
       }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"📋 Subagent completed: $CLAUDE_SUBAGENT_TYPE (model: $CLAUDE_SUBAGENT_MODEL)\"",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   }
 }

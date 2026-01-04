@@ -152,6 +152,34 @@ User requests work (implement, add, refactor, etc.)
 
 ---
 
+## Seeing Delegation Activity
+
+Delegation happens automatically but isn't always obvious. Here's how to see it:
+
+### Built-in Visibility
+- **Claude announces delegation** in conversation text (e.g., "I'll use the Explore agent...")
+- **Verbose mode (Ctrl+O)** shows more detail about tool decisions
+- **`/cost` command** shows total token spend (not per-agent breakdown)
+
+### With cc-governance Hook
+If the SubagentStop hook is installed, you'll see announcements when agents complete:
+```
+📋 Subagent completed: Explore (model: haiku)
+```
+
+### Built-in Agent Models (Already Optimized)
+
+| Agent | Model | When Used |
+|-------|-------|-----------|
+| **Explore** | Haiku | Codebase search/exploration |
+| **Plan** | Sonnet | Architecture planning |
+| **general-purpose** | Sonnet | Implementation work |
+| **claude-code-guide** | Session model | Documentation lookup |
+
+**You don't need to specify models for built-in agents** — they're already configured for optimal cost/capability balance. Only override when you need Opus for complex/security-critical work.
+
+---
+
 ## Writing Effective Delegation Prompts
 
 ### Include These Elements:
@@ -334,4 +362,4 @@ Before doing implementation work, ask:
 
 ---
 
-**Last Updated**: 2026-01-04
+**Last Updated**: 2026-01-04 (added delegation visibility section)
