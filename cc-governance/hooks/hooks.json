@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"$(date): Subagent completed: $CLAUDE_SUBAGENT_TYPE (model: $CLAUDE_SUBAGENT_MODEL)\" >> /tmp/subagent-hook.log; echo '{\"systemMessage\": \"📋 Subagent completed: '$CLAUDE_SUBAGENT_TYPE' (model: '$CLAUDE_SUBAGENT_MODEL')\"}'",
+            "command": "echo '{\"systemMessage\": \"📋 Subagent completed: '$CLAUDE_SUBAGENT_TYPE' (model: '$CLAUDE_SUBAGENT_MODEL')\"}'",
             "timeout": 5
           }
         ]
