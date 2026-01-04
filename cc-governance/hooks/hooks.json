@@ -1,5 +1,5 @@
 {
-  "description": "Governance hooks for documentation tracking and skill activation",
+  "description": "Governance hooks for tracking visibility",
   "hooks": {
     "SessionStart": [
       {
@@ -9,18 +9,6 @@
             "type": "command",
             "command": "PROJECT_ACTIVE=\"$CLAUDE_PROJECT_DIR/docs/tracking/ACTIVE.md\"; META_DIR=\"$HOME/git/hh-meta/tracking\"; if [ -f \"$PROJECT_ACTIVE\" ]; then echo \"Tip: Project tracking available at docs/tracking/ACTIVE.md\"; fi; if [ -d \"$META_DIR\" ]; then echo \"Tip: Cross-project tracking available at ~/git/hh-meta/tracking/\"; fi",
             "timeout": 5
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "Before proceeding with this request, evaluate which installed skills may be relevant. For each potentially relevant skill, briefly state why it applies or doesn't apply. If any skills apply, use the Skill tool to load them before implementing the solution. This ensures consistent application of documented patterns and best practices.",
-            "timeout": 30
           }
         ]
       }
