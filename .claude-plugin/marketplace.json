@@ -10,7 +10,7 @@
     {
       "name": "cc-governance",
       "description": "Reusable governance skills and hooks for AI code assistants: delegation policies, development workflows, documentation management, git branching, plugin extensions, and automatic skill activation",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "author": {
         "name": "ImproperSubset",
         "email": "impropersubset@users.noreply.github.com"
