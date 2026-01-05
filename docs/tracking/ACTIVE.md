@@ -13,7 +13,7 @@ Adding FVTT developer skills based on Foundry VTT documentation research.
 | fvtt-hooks | Hooks.on/once/call/callAll, lifecycle, pitfalls | Done |
 | fvtt-data-storage | Flags vs Settings vs Files, scope types, namespacing | Done |
 | fvtt-sheets | ActorSheet/ItemSheet extension, activateListeners, render lifecycle | Done |
-| fvtt-dice-rolls | Roll class, evaluation, toMessage, custom dice, getRollData | Pending |
+| fvtt-dice-rolls | Roll class, evaluation, toMessage, custom dice, getRollData | Done |
 | fvtt-sockets | Multiplayer sync, socket.emit/executeAsGM patterns | Pending |
 
 ### Medium-Value
@@ -40,6 +40,7 @@ Workaround: Define hooks in `~/.claude/settings.json` instead of plugins.
 
 ## Recently Completed
 
+- 2026-01-04: Added fvtt-dice-rolls skill (v1.5.0)
 - 2026-01-04: Added fvtt-sheets skill (v1.4.0)
 - 2026-01-04: Added fvtt-data-storage skill (v1.3.0)
 - 2026-01-04: Added fvtt-hooks skill (v1.2.0)
