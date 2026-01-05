@@ -9,7 +9,6 @@
   "repository": "https://github.com/ImproperSubset/hh-agentics",
   "license": "MIT",
   "keywords": ["governance", "workflow", "documentation", "git", "best-practices"],
-  "hooks": "./hooks/hooks.json",
   "skills": [
     "./skills/cc-development-workflow",
     "./skills/cc-plugin-extensions",
