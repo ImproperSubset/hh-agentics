@@ -23,10 +23,10 @@ Adding FVTT developer skills based on Foundry VTT documentation research.
 | fvtt-active-effects | Effect application, timing, CUSTOM mode, duration tracking | Done |
 | fvtt-canvas | PIXI.js basics, layers, placeables, render flags | Done |
 | fvtt-localization | Language files, templates, JS API, pluralization | Done |
-| fvtt-compendiums | Pack creation, metadata, distribution | Pending |
-| fvtt-combat | Combat document, initiative, combatant sorting | Pending |
-| fvtt-chat-messages | ChatMessage types, formatting, roll output | Pending |
-| fvtt-applications | FormApplication, Dialog, custom windows | Pending |
+| fvtt-compendiums | Pack creation, metadata, distribution | Done |
+| fvtt-combat | Combat document, initiative, combatant sorting | Done |
+| fvtt-chat-messages | ChatMessage types, formatting, roll output | Done |
+| fvtt-applications | FormApplication, Dialog, custom windows | Done |
 
 ## Known Issues
 
@@ -40,6 +40,7 @@ Workaround: Define hooks in `~/.claude/settings.json` instead of plugins.
 
 ## Recently Completed
 
+- 2026-01-05: Added fvtt-compendiums, fvtt-combat, fvtt-chat-messages, fvtt-applications skills (v1.8.0)
 - 2026-01-05: Added fvtt-active-effects, fvtt-canvas, fvtt-localization skills (v1.7.0)
 - 2026-01-04: Added fvtt-sockets skill (v1.6.0)
 - 2026-01-04: Added fvtt-dice-rolls skill (v1.5.0)

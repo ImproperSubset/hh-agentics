@@ -1,11 +1,15 @@
 {
   "name": "fvtt-dev",
-  "version": "1.7.0",
-  "description": "Essential skills for Foundry VTT module development: V13 migration, multi-client safety, version compatibility, data migrations, error handling, hooks, data storage, sheets, dice rolling, sockets, active effects, canvas, and localization",
+  "version": "1.8.0",
+  "description": "Comprehensive skills for Foundry VTT module development: V13 migration, multi-client safety, version compatibility, data migrations, error handling, hooks, data storage, sheets, dice rolling, sockets, active effects, canvas, localization, compendiums, combat, chat messages, and applications",
   "author": "ImproperSubset",
   "skills": [
     "./skills/fvtt-active-effects",
+    "./skills/fvtt-applications",
     "./skills/fvtt-canvas",
+    "./skills/fvtt-chat-messages",
+    "./skills/fvtt-combat",
+    "./skills/fvtt-compendiums",
     "./skills/fvtt-data-migrations",
     "./skills/fvtt-data-storage",
     "./skills/fvtt-dice-rolls",
