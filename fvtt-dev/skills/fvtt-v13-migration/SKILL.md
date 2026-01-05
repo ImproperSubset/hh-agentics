@@ -5,7 +5,22 @@ description: This skill should be used when the user asks to "migrate to V13", "
 
 # Foundry VTT V13 Development Guide
 
+**Domain:** Foundry VTT Module/System Development
+**Status:** Production-Ready
+**Last Updated:** 2026-01-05
+
+## Overview
+
 This guide covers V13-specific patterns and migration from earlier versions. For modules targeting V13, follow these guidelines.
+
+### When to Use This Skill
+
+- Migrating a module/system from V12 or earlier to V13
+- Converting CommonJS (`require`) to ESM (`import`/`export`)
+- Implementing DataModel for structured data
+- Updating deprecated patterns (`actor.data.data` to `actor.system`)
+- Fixing hook signature changes after V13 upgrade
+- Setting up V13-compatible manifest configuration
 
 ## Core Architecture Principles
 
@@ -206,3 +221,40 @@ Your `module.json` or `system.json` must declare V13 compatibility:
 5. Use `CONFIG.debug.hooks = true` to see all hook executions
 
 Remember: When in doubt, check the official Foundry VTT V13 API documentation at https://foundryvtt.com/api/
+
+## Implementation Checklist
+
+### Module Structure
+- [ ] Manifest declares `"esmodules"` (not `"scripts"`)
+- [ ] All imports use ESM syntax with `.js` extensions
+- [ ] Compatibility set to minimum V13
+
+### Data Patterns
+- [ ] DataModel classes define schemas with `defineSchema()`
+- [ ] Access system data via `document.system` (not `data.data`)
+- [ ] Active Effects use correct change structure
+
+### Code Quality
+- [ ] All user-facing strings use `game.i18n.localize()`
+- [ ] Hook callbacks use V13 argument signatures
+- [ ] Async operations are properly awaited
+- [ ] Permissions checked before privileged operations
+
+### Testing
+- [ ] Module loads without console errors
+- [ ] DataModel validation works correctly
+- [ ] Hooks fire with expected arguments
+- [ ] Multi-user scenarios tested
+
+## References
+
+- [Foundry VTT V13 API](https://foundryvtt.com/api/)
+- [DataModel API](https://foundryvtt.com/api/classes/foundry.abstract.DataModel.html)
+- [Migration Guide](https://foundryvtt.wiki/en/development/guides/v13-migration)
+- [ESM in Foundry](https://foundryvtt.wiki/en/development/guides/esm)
+
+---
+
+**Last Updated:** 2026-01-05
+**Status:** Production-Ready
+**Maintainer:** ImproperSubset
