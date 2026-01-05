@@ -22,7 +22,7 @@ Invoke this skill when:
 - Wanting to add unrelated functionality
 - Branch has grown beyond 20 commits
 - Multiple unrelated files changed
-- PR would be difficult to review
+- Changes would be difficult to understand
 
 ### 🎯 Decision Points
 - Unsure whether to create new branch or continue current
@@ -72,11 +72,11 @@ git checkout -b fix/descriptive-name        # For bug fixes
 
 **When in doubt, use a feature branch.**
 
-PRs provide:
+Feature branches provide:
 - 📝 Documentation of what changed and why
-- 👁️ Opportunity for review
 - 📊 Clear history of feature development
 - 🔄 Easy to revert if needed
+- 🧪 Isolated testing before merge
 
 ---
 
@@ -94,8 +94,7 @@ PRs provide:
 - ❌ Multiple distinct features mixed together
 - ❌ Hard to describe what the branch does in one sentence
 - ❌ Changes span unrelated systems
-- ❌ PR description would need multiple sections
-- ❌ Reviewer would struggle to follow changes
+- ❌ Commit history is difficult to follow
 - ❌ Rolling back one feature means losing others
 
 **Consequences:**
@@ -109,7 +108,7 @@ PRs provide:
 
 ### The Golden Rule
 
-**One feature, one branch, one PR.**
+**One feature, one branch, one merge.**
 
 If you can't describe the branch in a single sentence without using "and", it's too big.
 
@@ -124,7 +123,7 @@ If you can't describe the branch in a single sentence without using "and", it's 
 ### Bad Examples
 
 ❌ **Bad:** `feat/improvements` - Too vague, likely includes unrelated changes
-❌ **Bad:** `fix/various-bugs` - Multiple unrelated fixes should be separate PRs
+❌ **Bad:** `fix/various-bugs` - Multiple unrelated fixes should be separate branches
 ❌ **Bad:** `wip/stuff` - Not descriptive, suggests unfocused work
 
 ## Branch Size Guidelines
@@ -143,7 +142,7 @@ If you can't describe the branch in a single sentence without using "and", it's 
 5 commits → Normal feature pace
 10 commits → Check: Am I still focused on one feature?
 20 commits → WARNING: Consider splitting or wrapping up
-30 commits → CRITICAL: Finish and merge, or split into multiple PRs
+30 commits → CRITICAL: Finish and merge, or split into multiple branches
 50+ commits → MONSTER: This should have been 3-5 separate branches
 ```
 
@@ -285,7 +284,7 @@ git log --oneline -10  # Review recent commits
 - Commit messages use "and" frequently
 - Multiple unrelated `// TODO` comments
 - You've forgotten what early commits did
-- PR description draft has 3+ bullet points for unrelated changes
+- Summary of changes needs 3+ bullet points for unrelated changes
 
 **How to split:**
 
@@ -305,7 +304,7 @@ git stash pop
 
 ### 5. Prepare for Merge
 
-**Before creating PR:**
+**Before merging:**
 ```bash
 # Rebase on latest main
 git fetch origin
@@ -316,39 +315,27 @@ git diff origin/main
 
 # Check commit history is clean
 git log origin/main..HEAD --oneline
+
+# Run tests if applicable
+npm test  # or your test command
 ```
 
-### 6. Create PR
+### 6. Merge to Main
 
 ```bash
-git push origin feat/descriptive-name
-
-# Create PR
-gh pr create --base main \
-  --title "feat: Add descriptive feature" \
-  --body "$(cat <<'EOF'
-## Summary
-- Bullet point 1
-- Bullet point 2
-
-## Test plan
-- [ ] Test case 1
-- [ ] Test case 2
-EOF
-)"
-```
-
-### 7. After Merge
-
-```bash
-# Delete local branch
+# Switch to main and merge
 git checkout main
 git pull origin main
-git branch -d feat/descriptive-name
+git merge --no-ff feat/descriptive-name
 
-# Delete remote branch (if not auto-deleted)
-git push origin --delete feat/descriptive-name
+# Push to remote
+git push origin main
+
+# Delete local branch
+git branch -d feat/descriptive-name
 ```
+
+**Note:** `--no-ff` creates a merge commit even for fast-forward merges, preserving branch history.
 
 ## Commit Message Conventions
 
@@ -407,9 +394,9 @@ Closes #42
 
 **You should split if:**
 - Branch has 40+ commits and isn't done
-- Multiple reviewers ask "what does this PR do?"
-- You can't write a coherent PR description
+- You can't summarize the changes coherently
 - Rolling back would lose multiple independent features
+- Commit history mixes unrelated changes
 
 ### How to Split
 
@@ -417,7 +404,7 @@ Closes #42
 
 ```bash
 # Current branch: feat/massive (50 commits)
-# Goal: Extract first feature into separate PR
+# Goal: Extract first feature into separate branch
 
 # 1. Create new branch from main
 git checkout main
@@ -427,13 +414,15 @@ git checkout -b feat/extracted-feature
 git log feat/massive --oneline  # Find commit SHAs
 git cherry-pick abc123 def456 ghi789
 
-# 3. Push and create PR
-git push origin feat/extracted-feature
-gh pr create --base main
+# 3. Merge the extracted feature
+git checkout main
+git merge --no-ff feat/extracted-feature
+git push origin main
+git branch -d feat/extracted-feature
 
-# 4. After merge, rebase massive branch
+# 4. Rebase massive branch to remove duplicates
 git checkout feat/massive
-git rebase main  # Removes duplicate commits
+git rebase main
 ```
 
 **Strategy B: Start Fresh, Reference Old**
@@ -472,13 +461,14 @@ git branch -D feat/massive
 - [ ] Checking commit count every 5-10 commits
 - [ ] Resisting "while I'm here" temptations
 
-### Before Creating PR
+### Before Merging
 
 - [ ] Branch has <30 commits (or justifiable if larger)
 - [ ] All commits are related to the same feature
 - [ ] Rebased on latest main
-- [ ] Can describe PR in 1-3 sentences
+- [ ] Can describe changes in 1-3 sentences
 - [ ] Commit history is clean and logical
+- [ ] Tests pass (if applicable)
 
 ### Danger Signs (Stop and Split)
 
@@ -486,7 +476,7 @@ git branch -D feat/massive
 - [ ] ⚠️ Changed more than 15 unrelated files
 - [ ] ⚠️ Commit messages have "also", "and", "while here"
 - [ ] ⚠️ Can't remember what early commits did
-- [ ] ⚠️ PR description needs multiple unrelated bullet points
+- [ ] ⚠️ Summary needs multiple unrelated bullet points
 
 ## Common Scenarios
 
@@ -512,7 +502,7 @@ git branch -D feat/massive
 ### "My branch has 40 commits, should I split?"
 
 **Yes.** Options:
-1. Extract completed portions into separate PRs (cherry-pick)
+1. Extract completed portions into separate branches (cherry-pick)
 2. Finish current branch as-is, vow to split next time
 3. Start fresh with clean branches for each feature
 
@@ -527,15 +517,15 @@ git commit -m "feat: add feature"
 git add <formatting files>
 git commit -m "chore: format code"
 
-# Approach 2: Split into two PRs
-# - PR 1: Formatting only (refactor/format-cleanup)
-# - PR 2: Feature only (feat/my-feature)
+# Approach 2: Split into two branches
+# - Branch 1: Formatting only (refactor/format-cleanup) - merge first
+# - Branch 2: Feature only (feat/my-feature) - merge after
 ```
 
 ---
 
-**Remember:** When in doubt, split it out. Smaller PRs are easier to review, safer to merge, and faster to ship.
+**Remember:** When in doubt, split it out. Smaller branches are easier to understand, safer to merge, and faster to ship.
 
 ---
 
-**Last Updated**: 2026-01-04
+**Last Updated**: 2026-01-05
