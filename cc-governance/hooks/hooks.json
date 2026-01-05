@@ -3,26 +3,16 @@
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "MSG=\"\"; PROJECT_ACTIVE=\"$CLAUDE_PROJECT_DIR/docs/tracking/ACTIVE.md\"; META_DIR=\"$HOME/git/hh-meta/tracking\"; if [ -f \"$PROJECT_ACTIVE\" ]; then MSG=\"📁 Project tracking: docs/tracking/ACTIVE.md\"; fi; if [ -d \"$META_DIR\" ]; then [ -n \"$MSG\" ] && MSG=\"$MSG | \"; MSG=\"${MSG}📁 Cross-project: ~/git/hh-meta/tracking/\"; fi; if [ -n \"$MSG\" ]; then echo \"{\\\"systemMessage\\\": \\\"$MSG\\\"}\"; fi",
-            "timeout": 5
-          }
-        ]
+        "type": "command",
+        "command": "MSG=\"\"; PROJECT_ACTIVE=\"$CLAUDE_PROJECT_DIR/docs/tracking/ACTIVE.md\"; META_DIR=\"$HOME/git/hh-meta/tracking\"; if [ -f \"$PROJECT_ACTIVE\" ]; then MSG=\"📁 Project tracking: docs/tracking/ACTIVE.md\"; fi; if [ -d \"$META_DIR\" ]; then [ -n \"$MSG\" ] && MSG=\"$MSG | \"; MSG=\"${MSG}📁 Cross-project: ~/git/hh-meta/tracking/\"; fi; if [ -n \"$MSG\" ]; then echo \"{\\\"systemMessage\\\": \\\"$MSG\\\"}\"; fi",
+        "timeout": 5
       }
     ],
     "SubagentStop": [
       {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '{\"systemMessage\": \"📋 Subagent completed: '$CLAUDE_SUBAGENT_TYPE' (model: '$CLAUDE_SUBAGENT_MODEL')\"}'",
-            "timeout": 5
-          }
-        ]
+        "type": "command",
+        "command": "echo '{\"systemMessage\": \"📋 Subagent completed: '$CLAUDE_SUBAGENT_TYPE' (model: '$CLAUDE_SUBAGENT_MODEL')\"}'",
+        "timeout": 5
       }
     ]
   }
