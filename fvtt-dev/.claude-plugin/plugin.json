@@ -1,7 +1,7 @@
 {
   "name": "fvtt-dev",
-  "version": "1.5.0",
-  "description": "Essential skills for Foundry VTT module development: V13 migration, multi-client safety, version compatibility, data migrations, error handling, hooks, data storage, sheets, and dice rolling patterns",
+  "version": "1.6.0",
+  "description": "Essential skills for Foundry VTT module development: V13 migration, multi-client safety, version compatibility, data migrations, error handling, hooks, data storage, sheets, dice rolling, and socket patterns",
   "author": "ImproperSubset",
   "skills": [
     "./skills/fvtt-data-migrations",
@@ -11,6 +11,7 @@
     "./skills/fvtt-hooks",
     "./skills/fvtt-performance-safe-updates",
     "./skills/fvtt-sheets",
+    "./skills/fvtt-sockets",
     "./skills/fvtt-v13-migration",
     "./skills/fvtt-version-compat"
   ]
