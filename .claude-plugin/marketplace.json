@@ -17,7 +17,10 @@
       },
       "source": "./cc-governance",
       "category": "productivity",
-      "homepage": "https://github.com/ImproperSubset/hh-agentics"
+      "homepage": "https://github.com/ImproperSubset/hh-agentics",
+      "repository": "https://github.com/ImproperSubset/hh-agentics",
+      "license": "MIT",
+      "keywords": ["governance", "workflow", "documentation", "git", "best-practices"]
     },
     {
       "name": "fvtt-dev",
@@ -29,7 +32,10 @@
       },
       "source": "./fvtt-dev",
       "category": "development",
-      "homepage": "https://github.com/ImproperSubset/hh-agentics"
+      "homepage": "https://github.com/ImproperSubset/hh-agentics",
+      "repository": "https://github.com/ImproperSubset/hh-agentics",
+      "license": "MIT",
+      "keywords": ["foundry-vtt", "fvtt", "module-development", "v13", "game-system"]
     }
   ]
 }
