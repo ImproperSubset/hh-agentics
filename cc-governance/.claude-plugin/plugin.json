@@ -1,6 +1,6 @@
 {
   "name": "cc-governance",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Reusable governance skills and hooks for AI code assistants: delegation policies, development workflows, documentation management, git branching, plugin extensions, and automatic skill activation",
   "author": {
     "name": "ImproperSubset",
@@ -9,6 +9,7 @@
   "repository": "https://github.com/ImproperSubset/hh-agentics",
   "license": "MIT",
   "keywords": ["governance", "workflow", "documentation", "git", "best-practices"],
+  "hooks": "./hooks/hooks.json",
   "skills": [
     "./skills/cc-development-workflow",
     "./skills/cc-plugin-extensions",
