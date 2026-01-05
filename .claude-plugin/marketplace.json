@@ -21,8 +21,8 @@
     },
     {
       "name": "fvtt-dev",
-      "description": "Essential skills for Foundry VTT module development: V13 migration, multi-client safety, version compatibility, data migrations, error handling, hooks, and data storage patterns",
-      "version": "1.3.0",
+      "description": "Essential skills for Foundry VTT module development: V13 migration, multi-client safety, version compatibility, data migrations, error handling, hooks, data storage, and sheet patterns",
+      "version": "1.4.0",
       "author": {
         "name": "ImproperSubset",
         "email": "impropersubset@users.noreply.github.com"
