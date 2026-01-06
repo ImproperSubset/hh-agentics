@@ -1,6 +1,6 @@
 ---
 name: fvtt-performance-safe-updates
-description: This skill should be used when adding features that update actors or items, implementing hook handlers, modifying update logic, or replacing embedded documents. Covers ownership guards, no-op checks, batched updates, queueUpdate wrapper, and atomic document operations.
+description: This skill should be used when adding features that update actors or items, implementing hook handlers, modifying update logic, or replacing embedded documents. Covers ownership guards, no-op checks, batched updates, queueUpdate wrapper, atomic document operations, render suppression with { render: false }, idempotency guards, and choosing between optimistic vs locking UI patterns.
 ---
 
 # Foundry VTT Performance-Safe Updates
@@ -168,25 +168,93 @@ Hooks.on("renderBladesClockSheet", (sheet, html, data) => {
 });
 ```
 
-### Step 7: Avoid Redundant Manual Renders
+### Step 7: Render Suppression with { render: false }
 
-**Foundry automatically rerenders sheets after document updates:**
+**Understanding Foundry's render flow:**
+
+When `document.update()` is called, Foundry:
+1. Sends update to server
+2. Broadcasts change to all clients
+3. Fires `updateActor`/`updateItem` hooks on each client
+4. Automatically calls `render()` on sheets registered in `doc.apps`
+
+The `{ render: false }` option suppresses **only step 4** - hooks still fire, but automatic sheet re-renders are skipped. This pattern is used by the official dnd5e system.
+
+**When using optimistic UI, suppress the automatic re-render:**
 
 ```javascript
-// ❌ BAD: Explicit render after update causes double-render
-await this.actor.update(updates);
-this.render(false);  // Unnecessary!
+// Pattern: Optimistic update + suppress re-render
+function optimisticClockUpdate(clockEl, doc, newValue) {
+  // 1. Update DOM immediately (optimistic)
+  clockEl.style.backgroundImage = `url('clocks/clock_${newValue}.svg')`;
 
-// ✅ GOOD: Let Foundry's updateActor hook handle the render
-await this.actor.update(updates);
-// Sheet automatically rerenders via hook
+  // 2. Persist with render suppressed - DOM already shows correct state
+  await doc.update({ "system.value": newValue }, { render: false });
+}
 ```
 
-**Exception:** Only call `render(false)` manually if:
-- You're updating UI state without document changes
-- You need to refresh after external changes (other user's update)
+**Suppress render when:**
+- Optimistic UI already shows the correct final state
+- Update is to a field not displayed in the current view
+- Doing batch operations (render once at end)
 
-### Step 8: Debounce High-Frequency Handlers
+**Allow render when:**
+- Update affects computed/derived data the template needs
+- Template needs to rebuild lists or complex structures
+- You haven't done an optimistic update
+
+```javascript
+// DON'T suppress render - sheet needs fresh data for ability list
+// Removing an ability slot changes what abilities are shown
+await actor.setFlag(MODULE_ID, "addedAbilitySlots", filteredSlots);
+// Let Foundry re-render to rebuild the ability list from new data
+```
+
+### Step 8: Use the safeUpdate Helper
+
+**Combine all guards into a single helper:**
+
+```javascript
+/**
+ * Safely updates a document with ownership, no-op, and render-suppression guards.
+ */
+export async function safeUpdate(doc, updateData, options = {}) {
+  // 1. Ownership guard - only owner should update
+  if (!doc?.isOwner) return false;
+
+  // 2. Empty update guard
+  const entries = Object.entries(updateData || {});
+  if (entries.length === 0) return false;
+
+  // 3. No-op detection - skip if values unchanged
+  const hasChange = entries.some(([key, value]) => {
+    // Objects always treated as changes (too complex to deep-compare)
+    if (value !== null && typeof value === "object") return true;
+    const currentValue = foundry.utils.getProperty(doc, key);
+    return currentValue !== value;
+  });
+  if (!hasChange) return false;
+
+  // 4. Queued, render-suppressed update
+  await queueUpdate(async () => {
+    await doc.update(updateData, { render: false, ...options });
+  });
+  return true;
+}
+```
+
+**Usage:**
+
+```javascript
+// Simple: handles all guards automatically
+clockEl.style.backgroundImage = `url('clocks/clock_${newValue}.svg')`;
+await safeUpdate(doc, { "system.value": newValue });
+
+// Override render suppression if needed
+await safeUpdate(doc, { "system.abilitySlots": newSlots }, { render: true });
+```
+
+### Step 9: Debounce High-Frequency Handlers
 
 **For handlers that run frequently (keyup, mousemove), add debouncing:**
 
@@ -206,6 +274,102 @@ html.find("input").on("keyup", debounce(async (ev) => {
 }, 300));
 ```
 
+### Step 10: Idempotency Guard for Click Handlers
+
+**When using checkboxes with `<label>` elements, CSS interactions can cause duplicate click events:**
+
+```javascript
+html.find(".item-checkbox").on("click", async (ev) => {
+  const itemBlock = ev.currentTarget.closest(".item-block");
+  const desiredState = !isCurrentlyEquipped;
+
+  // IDEMPOTENCY GUARD: Prevent ghost clicks from CSS label overlaps
+  // Store pending state on DOM element itself
+  if (itemBlock.dataset.optimisticState === String(desiredState)) {
+    return; // Already processing this state change
+  }
+  itemBlock.dataset.optimisticState = String(desiredState);
+
+  // Proceed with optimistic update
+  requestAnimationFrame(() => {
+    checkbox.checked = desiredState;
+  });
+
+  await safeUpdate(doc, { "system.equipped": desiredState });
+});
+```
+
+**When to use idempotency guards:**
+- Checkbox/label combinations where CSS creates overlapping click targets
+- Any UI where rapid duplicate events are possible
+- Toggle buttons that might receive multiple events from same user action
+
+## Optimistic vs Locking Patterns
+
+Not all UI interactions should use pure optimistic updates. Choose the pattern based on operation complexity.
+
+### Pure Optimistic Pattern
+
+**Use for simple flag or field updates where the final visual state is known immediately:**
+
+```javascript
+// Pure optimistic: clock increment
+clockEl.style.backgroundImage = `url('clocks/clock_${newValue}.svg')`;
+await safeUpdate(doc, { "system.value": newValue });
+```
+
+### Locking Pattern
+
+**Use for operations that create/delete embedded documents or have cascading effects:**
+
+```javascript
+// Locking: ability toggle that may create/delete items
+html.find(".ability-checkbox").change(async (ev) => {
+  const checkboxList = abilityBlock.querySelectorAll(".ability-checkbox");
+
+  // 1. LOCK: Disable inputs during operation
+  checkboxList.forEach(el => el.setAttribute("disabled", "disabled"));
+
+  try {
+    // 2. Perform complex operations (may create/delete items)
+    if (!hadProgress && willHaveProgress) {
+      await createOwnedAbility(actor, abilityId);
+    } else if (hadProgress && !willHaveProgress) {
+      await deleteOwnedAbility(actor, abilityId);
+    }
+
+    // 3. Update DOM AFTER operations complete (not before)
+    abilityBlock.dataset.abilityProgress = String(targetProgress);
+    checkboxList.forEach(el => {
+      el.checked = slotIndex <= targetProgress;
+    });
+
+  } finally {
+    // 4. UNLOCK: Re-enable inputs
+    checkboxList.forEach(el => el.removeAttribute("disabled"));
+  }
+});
+```
+
+### Choosing Between Patterns
+
+| Aspect           | Pure Optimistic             | Locking Pattern                   |
+|------------------|-----------------------------|-----------------------------------|
+| UI update timing | Before persist              | After persist                     |
+| User feedback    | Immediate visual change     | Disabled state during operation   |
+| Use case         | Simple field updates        | Complex multi-document operations |
+| Failure handling | UI may show incorrect state | UI reflects actual final state    |
+
+**Use Pure Optimistic when:**
+- Updating a single field or flag
+- Final state is deterministic
+- No side effects on other documents
+
+**Use Locking when:**
+- Creating or deleting embedded documents
+- Ownership changes affect what items exist
+- Multi-step operations where intermediate state could confuse users
+
 ## Quick Checklist for New Code
 
 Before submitting any code that updates documents, verify:
@@ -216,8 +380,10 @@ Before submitting any code that updates documents, verify:
 - [ ] **Queued**: Update wrapped in `queueUpdate(async () => { ... })`
 - [ ] **Atomic**: Used `updateEmbeddedDocuments()` instead of delete+create for replacements
 - [ ] **Rerender Guards**: Only rerender owned and currently open sheets
-- [ ] **No Redundant Renders**: Removed manual `render(false)` after document updates
+- [ ] **Render Suppression**: Using `{ render: false }` with optimistic UI updates
 - [ ] **Debounced**: High-frequency handlers (keyup, mousemove) use debouncing
+- [ ] **Idempotency**: Click handlers guard against duplicate events
+- [ ] **Pattern Choice**: Using locking pattern for complex operations, optimistic for simple updates
 
 ## Common Patterns by Feature Type
 
@@ -321,11 +487,16 @@ After implementing updates, test with multiple clients:
 
 ## References
 
-- Foundry VTT Hook documentation: ownership checks in hooks
+- [Foundry VTT API - Document#update](https://foundryvtt.com/api/classes/foundry.abstract.Document.html#update) - Official update options including `render`
+- [dnd5e System](https://github.com/foundryvtt/dnd5e) - Uses `{ render: false }` pattern extensively in migrations
 - Update queue pattern: prevents concurrent update collisions
 - Atomic updates: `updateEmbeddedDocuments` vs delete+create
 
-For BitD Alternate Sheets module:
-- queueUpdate implementation in `scripts/utils.js`
-- Ownership patterns in `scripts/hooks.js`
-- Performance guidelines in `docs/performance-update-guidelines.md`
+**Implementation notes:**
+- The `queueUpdate` and `safeUpdate` helpers typically live in a utils module
+- Clock handlers and other UI interactions belong in dedicated feature modules
+- The exact file locations are project-specific; the patterns are what matter
+
+---
+
+**Last Updated:** 2026-01-05
