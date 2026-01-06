@@ -25,7 +25,7 @@
     {
       "name": "fvtt-dev",
       "description": "Comprehensive skills for Foundry VTT module development: V13 migration, multi-client safety, version compatibility, data migrations, error handling, hooks, data storage, sheets, dice rolling, sockets, active effects, canvas, localization, compendiums, combat, chat messages, and applications",
-      "version": "1.8.0",
+      "version": "1.9.0",
       "author": {
         "name": "ImproperSubset",
         "email": "impropersubset@users.noreply.github.com"
