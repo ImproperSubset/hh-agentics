@@ -1,6 +1,6 @@
 ---
 name: fvtt-performance-safe-updates
-description: This skill should be used when adding features that update actors or items, implementing hook handlers, modifying update logic, or replacing embedded documents. Covers ownership guards, no-op checks, batched updates, queueUpdate wrapper, atomic document operations, render suppression with { render: false }, idempotency guards, and choosing between optimistic vs locking UI patterns.
+description: This skill should be used when adding features that update actors or items, implementing hook handlers, modifying update logic, or replacing embedded documents. Covers ownership guards, no-op checks, batched updates, queueUpdate wrapper, atomic document operations, and letting Foundry handle renders automatically for multi-client sync.
 ---
 
 # Foundry VTT Performance-Safe Updates
@@ -168,7 +168,9 @@ Hooks.on("renderBladesClockSheet", (sheet, html, data) => {
 });
 ```
 
-### Step 7: Render Suppression with { render: false }
+### Step 7: Let Foundry Handle Renders (Avoid { render: false })
+
+**Default behavior:** When `document.update()` is called, Foundry automatically re-renders all registered sheets on ALL connected clients. This is the correct behavior for multi-client synchronization.
 
 **Understanding Foundry's render flow:**
 
@@ -178,37 +180,39 @@ When `document.update()` is called, Foundry:
 3. Fires `updateActor`/`updateItem` hooks on each client
 4. Automatically calls `render()` on sheets registered in `doc.apps`
 
-The `{ render: false }` option suppresses **only step 4** - hooks still fire, but automatic sheet re-renders are skipped. This pattern is used by the official dnd5e system.
-
-**When using optimistic UI, suppress the automatic re-render:**
+**Critical:** The `{ render: false }` option suppresses step 4 on **ALL clients**, not just the initiating client. This breaks multi-client synchronization.
 
 ```javascript
-// Pattern: Optimistic update + suppress re-render
-function optimisticClockUpdate(clockEl, doc, newValue) {
-  // 1. Update DOM immediately (optimistic)
-  clockEl.style.backgroundImage = `url('clocks/clock_${newValue}.svg')`;
+// ❌ BAD: Suppresses render on ALL clients, breaking multi-client sync
+await actor.update({ "system.value": newValue }, { render: false });
+// Other players' sheets won't update!
 
-  // 2. Persist with render suppressed - DOM already shows correct state
-  await doc.update({ "system.value": newValue }, { render: false });
+// ✅ GOOD: Let Foundry handle renders automatically
+await queueUpdate(async () => {
+  await actor.update({ "system.value": newValue });
+});
+// All clients re-render automatically, staying in sync
+```
+
+**Only exception - Data Migrations in getData():**
+
+When migrating data inside `getData()`, you must suppress render to prevent infinite loops:
+
+```javascript
+// In getData() - migration MUST suppress render to avoid infinite loop
+async getData() {
+  // Detect old data format that needs migration
+  if (this.actor.system.oldField !== undefined) {
+    queueUpdate(() => this.actor.update({
+      "system.newField": this.actor.system.oldField,
+      "system.-=oldField": null
+    }, { render: false }));
+  }
+  // ... rest of getData
 }
 ```
 
-**Suppress render when:**
-- Optimistic UI already shows the correct final state
-- Update is to a field not displayed in the current view
-- Doing batch operations (render once at end)
-
-**Allow render when:**
-- Update affects computed/derived data the template needs
-- Template needs to rebuild lists or complex structures
-- You haven't done an optimistic update
-
-```javascript
-// DON'T suppress render - sheet needs fresh data for ability list
-// Removing an ability slot changes what abilities are shown
-await actor.setFlag(MODULE_ID, "addedAbilitySlots", filteredSlots);
-// Let Foundry re-render to rebuild the ability list from new data
-```
+**With proper caching, Foundry sheet renders are fast (~2-3ms).** There's no need for "optimistic UI" patterns that manipulate DOM before/after updates.
 
 ### Step 8: Use the safeUpdate Helper
 
@@ -216,7 +220,8 @@ await actor.setFlag(MODULE_ID, "addedAbilitySlots", filteredSlots);
 
 ```javascript
 /**
- * Safely updates a document with ownership, no-op, and render-suppression guards.
+ * Safely updates a document with ownership and no-op guards.
+ * Lets Foundry handle re-renders automatically for multi-client sync.
  */
 export async function safeUpdate(doc, updateData, options = {}) {
   // 1. Ownership guard - only owner should update
@@ -235,9 +240,9 @@ export async function safeUpdate(doc, updateData, options = {}) {
   });
   if (!hasChange) return false;
 
-  // 4. Queued, render-suppressed update
+  // 4. Queued update - let Foundry handle renders
   await queueUpdate(async () => {
-    await doc.update(updateData, { render: false, ...options });
+    await doc.update(updateData, options);
   });
   return true;
 }
@@ -246,12 +251,11 @@ export async function safeUpdate(doc, updateData, options = {}) {
 **Usage:**
 
 ```javascript
-// Simple: handles all guards automatically
-clockEl.style.backgroundImage = `url('clocks/clock_${newValue}.svg')`;
+// Standard pattern: handles all guards, Foundry re-renders all clients
 await safeUpdate(doc, { "system.value": newValue });
 
-// Override render suppression if needed
-await safeUpdate(doc, { "system.abilitySlots": newSlots }, { render: true });
+// Only use render: false for data migrations in getData()
+await safeUpdate(doc, migrationData, { render: false });
 ```
 
 ### Step 9: Debounce High-Frequency Handlers
@@ -274,102 +278,6 @@ html.find("input").on("keyup", debounce(async (ev) => {
 }, 300));
 ```
 
-### Step 10: Idempotency Guard for Click Handlers
-
-**When using checkboxes with `<label>` elements, CSS interactions can cause duplicate click events:**
-
-```javascript
-html.find(".item-checkbox").on("click", async (ev) => {
-  const itemBlock = ev.currentTarget.closest(".item-block");
-  const desiredState = !isCurrentlyEquipped;
-
-  // IDEMPOTENCY GUARD: Prevent ghost clicks from CSS label overlaps
-  // Store pending state on DOM element itself
-  if (itemBlock.dataset.optimisticState === String(desiredState)) {
-    return; // Already processing this state change
-  }
-  itemBlock.dataset.optimisticState = String(desiredState);
-
-  // Proceed with optimistic update
-  requestAnimationFrame(() => {
-    checkbox.checked = desiredState;
-  });
-
-  await safeUpdate(doc, { "system.equipped": desiredState });
-});
-```
-
-**When to use idempotency guards:**
-- Checkbox/label combinations where CSS creates overlapping click targets
-- Any UI where rapid duplicate events are possible
-- Toggle buttons that might receive multiple events from same user action
-
-## Optimistic vs Locking Patterns
-
-Not all UI interactions should use pure optimistic updates. Choose the pattern based on operation complexity.
-
-### Pure Optimistic Pattern
-
-**Use for simple flag or field updates where the final visual state is known immediately:**
-
-```javascript
-// Pure optimistic: clock increment
-clockEl.style.backgroundImage = `url('clocks/clock_${newValue}.svg')`;
-await safeUpdate(doc, { "system.value": newValue });
-```
-
-### Locking Pattern
-
-**Use for operations that create/delete embedded documents or have cascading effects:**
-
-```javascript
-// Locking: ability toggle that may create/delete items
-html.find(".ability-checkbox").change(async (ev) => {
-  const checkboxList = abilityBlock.querySelectorAll(".ability-checkbox");
-
-  // 1. LOCK: Disable inputs during operation
-  checkboxList.forEach(el => el.setAttribute("disabled", "disabled"));
-
-  try {
-    // 2. Perform complex operations (may create/delete items)
-    if (!hadProgress && willHaveProgress) {
-      await createOwnedAbility(actor, abilityId);
-    } else if (hadProgress && !willHaveProgress) {
-      await deleteOwnedAbility(actor, abilityId);
-    }
-
-    // 3. Update DOM AFTER operations complete (not before)
-    abilityBlock.dataset.abilityProgress = String(targetProgress);
-    checkboxList.forEach(el => {
-      el.checked = slotIndex <= targetProgress;
-    });
-
-  } finally {
-    // 4. UNLOCK: Re-enable inputs
-    checkboxList.forEach(el => el.removeAttribute("disabled"));
-  }
-});
-```
-
-### Choosing Between Patterns
-
-| Aspect           | Pure Optimistic             | Locking Pattern                   |
-|------------------|-----------------------------|-----------------------------------|
-| UI update timing | Before persist              | After persist                     |
-| User feedback    | Immediate visual change     | Disabled state during operation   |
-| Use case         | Simple field updates        | Complex multi-document operations |
-| Failure handling | UI may show incorrect state | UI reflects actual final state    |
-
-**Use Pure Optimistic when:**
-- Updating a single field or flag
-- Final state is deterministic
-- No side effects on other documents
-
-**Use Locking when:**
-- Creating or deleting embedded documents
-- Ownership changes affect what items exist
-- Multi-step operations where intermediate state could confuse users
-
 ## Quick Checklist for New Code
 
 Before submitting any code that updates documents, verify:
@@ -380,10 +288,8 @@ Before submitting any code that updates documents, verify:
 - [ ] **Queued**: Update wrapped in `queueUpdate(async () => { ... })`
 - [ ] **Atomic**: Used `updateEmbeddedDocuments()` instead of delete+create for replacements
 - [ ] **Rerender Guards**: Only rerender owned and currently open sheets
-- [ ] **Render Suppression**: Using `{ render: false }` with optimistic UI updates
+- [ ] **No Render Suppression**: NOT using `{ render: false }` (breaks multi-client sync)
 - [ ] **Debounced**: High-frequency handlers (keyup, mousemove) use debouncing
-- [ ] **Idempotency**: Click handlers guard against duplicate events
-- [ ] **Pattern Choice**: Using locking pattern for complex operations, optimistic for simple updates
 
 ## Common Patterns by Feature Type
 
@@ -472,6 +378,21 @@ await actor.createEmbeddedDocuments("Item", [data]);
 await actor.update({ "system.xp": actor.system.xp });
 ```
 
+### ❌ Render Suppression (Breaks Multi-Client Sync)
+```javascript
+// Suppresses render on ALL connected clients, not just initiating client!
+await actor.update({ "system.value": newValue }, { render: false });
+// Other players' sheets won't update - they'll see stale data
+```
+
+### ❌ Optimistic UI DOM Manipulation
+```javascript
+// DOM manipulation before persist causes desync if update fails
+checkbox.checked = newValue;  // Update DOM first (optimistic)
+await actor.update({ "system.equipped": newValue });  // Then persist
+// If update fails, DOM shows wrong state; other clients may not sync
+```
+
 ## Testing Multi-Client Performance
 
 After implementing updates, test with multiple clients:
@@ -499,4 +420,4 @@ After implementing updates, test with multiple clients:
 
 ---
 
-**Last Updated:** 2026-01-05
+**Last Updated:** 2026-01-14
